@@ -30,6 +30,7 @@ export function includedModel(directive: IncludeDirective): NuSmvModel | undefin
     return isNuSmvModel(model) ? model : undefined;
 }
 
+/** Yields the root followed by its transitive includes, visiting each model once even in a cycle. */
 export function* visibleModels(root: NuSmvModel): Iterable<NuSmvModel> {
     const pending = new Set([root]);
     for (const model of pending) {
@@ -43,6 +44,7 @@ export function* visibleModels(root: NuSmvModel): Iterable<NuSmvModel> {
     }
 }
 
+/** Reports problems on the include directive that introduces the missing, repeated, or cyclic dependency. */
 export function checkIncludes(model: NuSmvModel, accept: ValidationAcceptor): void {
     const seen = new Set<NuSmvModel>();
     for (const directive of model.includes) {
@@ -71,6 +73,10 @@ export function checkIncludes(model: NuSmvModel, accept: ValidationAcceptor): vo
     }
 }
 
+/**
+ * Loads quoted includes before Langium links module references and rebuilds
+ * dependent models when an include target changes. No preprocessor runs here.
+ */
 export class NuSMVDocumentBuilder extends DefaultDocumentBuilder {
     protected override shouldRelink(document: LangiumDocument, changedUris: Set<string>): boolean {
         const root = document.parseResult.value;
@@ -89,8 +95,6 @@ export class NuSMVDocumentBuilder extends DefaultDocumentBuilder {
     protected override async buildDocuments(
         documents: LangiumDocument[], options: BuildOptions, cancelToken: CancellationToken
     ): Promise<void> {
-        // Discover the whole include closure before Langium starts indexing or
-        // linking any of its documents. Do not index unrelated workspace files.
         const build = new Set(documents);
         for (const document of build) {
             await interruptAndCheck(cancelToken);
@@ -120,6 +124,7 @@ export class NuSMVDocumentBuilder extends DefaultDocumentBuilder {
         await super.buildDocuments([...build], options, cancelToken);
     }
 
+    /** Prefer Langium's current document: an open editor can have newer content than the file on disk. */
     private async loadInclude(uri: URI, cancelToken: CancellationToken): Promise<LangiumDocument | undefined> {
         const known = this.langiumDocuments.getDocument(uri);
         if (known) {

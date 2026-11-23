@@ -9,7 +9,7 @@ import {
     parseNuSMVSpecResults,
     resolveNuSMVExecutable,
     shouldRevealRunOutput
-} from './nusmv-runner.js';
+} from '../../src/extension/nusmv-runner.js';
 
 test('resolves configured and platform-default NuSMV executables', () => {
     assert.equal(resolveNuSMVExecutable('/opt/nusmv/bin/NuSMV', 'darwin'), '/opt/nusmv/bin/NuSMV');

@@ -4,6 +4,7 @@ import { delimiter, join } from 'node:path';
 export type NuSMVRevealRunOutput = 'always' | 'onFailure' | 'never';
 export type NuSMVRunMessageKind = 'info' | 'warning' | 'error';
 
+/** Unquoted executable and arguments for spawn; only the terminal form needs shell quoting. */
 export interface NuSMVCommand {
     executable: string
     args: string[]
@@ -31,6 +32,10 @@ export interface NuSMVRunSummary {
 
 const SPEC_RESULT_PATTERN = /^\s*--\s*specification\b.*?\bis\s+(true|false)\b.*$/gim;
 
+/**
+ * Honor an explicit executable path. On Unix, installations use both `nusmv`
+ * and `NuSMV`; prefer the original lowercase command when both are available.
+ */
 export function resolveNuSMVExecutable(configuredPath: string | undefined, platform = process.platform, searchPath = process.env.PATH ?? ''): string {
     if (configuredPath?.trim()) {
         return configuredPath;
@@ -54,6 +59,10 @@ export function resolveNuSMVExecutable(configuredPath: string | undefined, platf
     return 'nusmv';
 }
 
+/**
+ * Build arguments for both run commands. A quoted include needs cpp, but a
+ * user-selected preprocessor takes precedence. Keep the model path last.
+ */
 export function buildNuSMVCommand(executable: string, defaultRunArgs: readonly string[], modelPath: string, modelText = ''): NuSMVCommand {
     const args = [...defaultRunArgs];
     if (!args.includes('-pre') && !args.includes('-cpp') && /^[\t ]*#[\t ]*include[\t ]*"[^"\r\n]+"/m.test(modelText)) {
@@ -65,6 +74,7 @@ export function buildNuSMVCommand(executable: string, defaultRunArgs: readonly s
     };
 }
 
+/** Count specification verdict lines, not the state values in counterexample traces. */
 export function parseNuSMVSpecResults(output: string): NuSMVSpecResults {
     let trueCount = 0;
     let falseCount = 0;
@@ -82,6 +92,10 @@ export function parseNuSMVSpecResults(output: string): NuSMVSpecResults {
     };
 }
 
+/**
+ * Distinguish a run that did not finish normally from a completed check:
+ * NuSMV can exit successfully even when a specification is false.
+ */
 export function formatNuSMVRunSummary(completion: NuSMVRunCompletion): NuSMVRunSummary {
     const duration = formatDuration(completion.elapsedMs);
     const specSummary = formatSpecSummary(completion.specResults);
@@ -131,6 +145,7 @@ export function shouldRevealRunOutput(mode: NuSMVRevealRunOutput, kind: NuSMVRun
     return mode === 'always' || (mode === 'onFailure' && kind !== 'info');
 }
 
+/** Render a command for terminal input or display; the captured runner passes argv directly. */
 export function buildTerminalCommand(command: NuSMVCommand): string {
     return [command.executable, ...command.args].map(quoteShellArg).join(' ');
 }

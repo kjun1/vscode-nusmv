@@ -71,6 +71,7 @@ const IDENTIFIER_TRIGGER_CHARACTERS = [
     ...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 ];
 
+/** Adds in-scope symbols and enum values to Langium's grammar-based suggestions. */
 export class NuSMVCompletionProvider extends DefaultCompletionProvider {
 
     override readonly completionOptions = {
@@ -145,6 +146,10 @@ export class NuSMVCompletionProvider extends DefaultCompletionProvider {
         return [...scopeItems, ...enumItems, ...BUILTIN_LITERAL_ITEMS];
     }
 
+    /**
+     * Outside member access, return undefined to allow grammar completions.
+     * After a dot on a non-module, return an empty list: keywords are not members.
+     */
     private getDotAccessCompletionItems(document, params: CompletionParams) {
         const root = document.parseResult.value;
         const cstRoot = root.$cstNode;

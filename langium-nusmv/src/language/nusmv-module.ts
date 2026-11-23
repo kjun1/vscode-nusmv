@@ -64,6 +64,7 @@ export const NuSMVSharedModule: Module<LangiumSharedServices, PartialLangiumShar
     }
 };
 
+/** Creates the services used by both the language server and tests, using the file system supplied by the caller. */
 export function createNuSMVServices(context: DefaultSharedModuleContext): {
     shared: LangiumSharedServices
     NuSMV: NuSMVServices

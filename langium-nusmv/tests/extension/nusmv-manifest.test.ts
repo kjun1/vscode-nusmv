@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+const manifest = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8'));
 
 test('contributes NuSMV run configuration settings with expected defaults', () => {
     const properties = manifest.contributes.configuration.properties;

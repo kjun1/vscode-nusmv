@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 test('uses a manual TextMate grammar with NuSMV-specific scopes', async () => {
-    const grammar = JSON.parse(await readFile(new URL('../../syntaxes/nusmv.tmLanguage.json', import.meta.url), 'utf-8'));
+    const grammar = JSON.parse(await readFile(new URL('../../../syntaxes/nusmv.tmLanguage.json', import.meta.url), 'utf-8'));
     const serialized = JSON.stringify(grammar);
 
     assert.equal(grammar.scopeName, 'source.nusmv');
@@ -18,7 +18,7 @@ test('uses a manual TextMate grammar with NuSMV-specific scopes', async () => {
 });
 
 test('maps semantic variable-like tokens to theme-friendly scopes', async () => {
-    const manifest = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf-8'));
+    const manifest = JSON.parse(await readFile(new URL('../../../package.json', import.meta.url), 'utf-8'));
     const mapping = manifest.contributes.semanticTokenScopes.find(scope => scope.language === 'nusmv');
 
     assert.deepEqual(mapping.scopes.property, [
@@ -44,7 +44,7 @@ test('maps semantic variable-like tokens to theme-friendly scopes', async () => 
 });
 
 test('does not regenerate the manual TextMate grammar from Langium config', async () => {
-    const config = JSON.parse(await readFile(new URL('../../langium-config.json', import.meta.url), 'utf-8'));
+    const config = JSON.parse(await readFile(new URL('../../../langium-config.json', import.meta.url), 'utf-8'));
     assert.equal(config.languages[0].textMate, undefined);
     assert.equal(config.languages[0].monarch.out, 'syntaxes/nusmv.monarch.ts');
 });

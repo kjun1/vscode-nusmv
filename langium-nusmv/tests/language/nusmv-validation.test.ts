@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { EmptyFileSystem } from 'langium';
 import { clearDocuments, validationHelper } from 'langium/test';
-import { createNuSMVServices } from './nusmv-module.js';
+import { createNuSMVServices } from '../../src/language/nusmv-module.js';
 
 const { NuSMV, shared } = createNuSMVServices(EmptyFileSystem);
 const validateNuSMV = validationHelper(NuSMV);
@@ -121,7 +121,7 @@ test('reports diagnostics instead of crashing on incomplete process declarations
 
 test('validates sample models without false enum-literal diagnostics', async () => {
     for (const file of ['model-orion.smv', 'model-river.smv', 'model-cobalt.smv']) {
-        const text = await readFile(new URL(`../../../tests/${file}`, import.meta.url), 'utf-8');
+        const text = await readFile(new URL(`../../../tests/fixtures/${file}`, import.meta.url), 'utf-8');
         const result = await validateNuSMV(text);
         assertNoDiagnostics(result.diagnostics, file);
         await result.dispose();
@@ -134,8 +134,8 @@ test('keeps same-named modules isolated between open documents', async () => {
 });
 
 async function assertCleanWhenOpenedAfter(firstFile: string, secondFile: string): Promise<void> {
-    const firstText = await readFile(new URL(`../../../tests/${firstFile}`, import.meta.url), 'utf-8');
-    const secondText = await readFile(new URL(`../../../tests/${secondFile}`, import.meta.url), 'utf-8');
+    const firstText = await readFile(new URL(`../../../tests/fixtures/${firstFile}`, import.meta.url), 'utf-8');
+    const secondText = await readFile(new URL(`../../../tests/fixtures/${secondFile}`, import.meta.url), 'utf-8');
     const first = await validateNuSMV(firstText, { documentUri: `file:///${firstFile}` });
     const second = await validateNuSMV(secondText, { documentUri: `file:///${secondFile}` });
     try {

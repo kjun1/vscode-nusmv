@@ -38,6 +38,10 @@ import {
 } from './nusmv-types.js';
 
 export class NuSMVValidator {
+    /**
+     * Marks duplicate names on local declarations or on the include that brings
+     * a conflicting name into this file. Each included model checks its own declarations.
+     */
     checkModuleNames(root: NuSmvModel, accept: ValidationAcceptor): void {
         const names = new Set<string>();
         for (const module of root.modules.filter(hasSymbolName)) {
@@ -62,7 +66,6 @@ export class NuSMVValidator {
                     }
                 }
             }
-            // Conflicts internal to one included branch are diagnosed in that file.
             for (const name of importedNames) {
                 if (names.has(name)) {
                     accept('error', `Duplicate module '${name}'.`, { node: directive });

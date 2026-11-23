@@ -29,6 +29,7 @@ let runStatusResetTimer: ReturnType<typeof setTimeout> | undefined;
 const CONFIG_SECTION = 'nusmv';
 const DIAGNOSTIC_DEBOUNCE_MS = 600;
 const DEFAULT_MAX_SEMANTIC_CHECK_LINES = 10_000;
+// If didOpen was suppressed, the server must not receive edits or a didClose for that opening.
 const skippedDocuments = new Set<string>();
 const diagnosticTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const diagnosticVersions = new Map<string, number>();
@@ -43,6 +44,7 @@ interface SpawnedNuSMVResult {
     error?: Error
 }
 
+/** Start the editor's language client. The NuSMV executable is only needed by the run commands. */
 export function activate(context: vscode.ExtensionContext): void {
     outputChannel = vscode.window.createOutputChannel('NuSMV');
     outputChannel.appendLine('NuSMV extension activate() called.');
@@ -159,6 +161,8 @@ export function activate(context: vscode.ExtensionContext): void {
                 return next(document, range, token);
             },
             handleDiagnostics: (uri, diagnostics, next) => {
+                // Remove resolved problems immediately, but wait for edits to settle
+                // before displaying errors. Only the newest batch for this URI may publish.
                 const key = uri.toString();
                 const version = (diagnosticVersions.get(key) ?? 0) + 1;
                 diagnosticVersions.set(key, version);
@@ -221,6 +225,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrentInTerminal', runCurrentModelInTerminal));
 }
 
+/** Stop any captured run and let VS Code await the language client's shutdown. */
 export function deactivate(): Thenable<void> | undefined {
     outputChannel?.appendLine('deactivate() called.');
     clearAllPendingDiagnostics();
@@ -315,6 +320,7 @@ async function runCurrentModelInTerminal(): Promise<void> {
     terminal.show();
 }
 
+/** The checker reads from disk: save the active model, leaving edits in other files untouched. */
 async function saveModelForRun(document: vscode.TextDocument): Promise<boolean> {
     try {
         if (!document.isDirty || await document.save()) {
@@ -370,6 +376,10 @@ function getRevealRunOutput(document?: vscode.TextDocument): NuSMVRevealRunOutpu
         : 'always';
 }
 
+/**
+ * Stream output as it arrives and keep both streams for the final verdict.
+ * Cancellation requests termination; the child process still supplies its exit status.
+ */
 function runSpawnedNuSMV(command: NuSMVCommand, cwd: string, token: vscode.CancellationToken): Promise<SpawnedNuSMVResult> {
     const startedAt = Date.now();
     let child: ChildProcessWithoutNullStreams;
@@ -404,6 +414,7 @@ function runSpawnedNuSMV(command: NuSMVCommand, cwd: string, token: vscode.Cance
             child.kill();
         });
 
+        // Node can emit both 'error' and 'close' when spawning fails.
         const finish = (result: Pick<SpawnedNuSMVResult, 'exitCode' | 'signal' | 'error'>): void => {
             if (settled) {
                 return;

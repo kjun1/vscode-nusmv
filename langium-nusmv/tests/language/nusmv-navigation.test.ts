@@ -3,7 +3,7 @@ import test from 'node:test';
 import { EmptyFileSystem } from 'langium';
 import { clearDocuments, parseDocument, replaceIndices, textDocumentPositionParams } from 'langium/test';
 import type { LocationLink } from 'vscode-languageserver';
-import { createNuSMVServices } from './nusmv-module.js';
+import { createNuSMVServices } from '../../src/language/nusmv-module.js';
 
 const { NuSMV, shared } = createNuSMVServices(EmptyFileSystem);
 

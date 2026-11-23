@@ -1,4 +1,4 @@
-# NuSMV VSCode Extension
+# NuSMV for VS Code (LiCRuM)
 
 NuSMV language support for Visual Studio Code, powered by a TypeScript Langium language server.
 

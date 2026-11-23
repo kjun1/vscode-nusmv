@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EmptyFileSystem } from 'langium';
 import { clearDocuments, expectCompletion } from 'langium/test';
-import { createNuSMVServices } from './nusmv-module.js';
+import { createNuSMVServices } from '../../src/language/nusmv-module.js';
 
 const { NuSMV, shared } = createNuSMVServices(EmptyFileSystem);
 const expectNuSMVCompletion = expectCompletion(NuSMV);

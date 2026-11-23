@@ -22,6 +22,7 @@ export function findContainingModule(node: object): Module | undefined {
     return AstUtils.getContainerOfType(node as never, isModule);
 }
 
+/** Collects named declarations, including the module itself and its enum literals, from a possibly incomplete parse. */
 export function collectModuleSymbols(module: Module): NuSMVSymbol[] {
     const symbols: NuSMVSymbol[] = [];
     if (hasSymbolName(module)) {

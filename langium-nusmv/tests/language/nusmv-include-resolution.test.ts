@@ -6,7 +6,7 @@ import test, { type TestContext } from 'node:test';
 import { URI } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import { textDocumentPositionParams } from 'langium/test';
-import { createNuSMVServices } from './nusmv-module.js';
+import { createNuSMVServices } from '../../src/language/nusmv-module.js';
 
 async function fixture(t: TestContext, files: Record<string, string>) {
     const directory = await mkdtemp(join(tmpdir(), 'nusmv-includes-'));

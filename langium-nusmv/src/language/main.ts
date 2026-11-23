@@ -10,6 +10,7 @@ const { shared } = createNuSMVServices({
     ...NodeFileSystem
 });
 
+// Serve completions as soon as local scopes are ready rather than waiting for validation.
 startLanguageServer(shared, {
     CompletionProvider: DocumentState.ComputedScopes
 });

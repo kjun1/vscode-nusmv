@@ -65,6 +65,7 @@ import {
 } from './generated/ast.js';
 import { collectModuleSymbols, NuSMVSymbol } from './nusmv-symbols.js';
 
+/** Types the editor can establish without evaluating the model. An unknown type is not itself a type error. */
 export type SemanticType =
     | { kind: 'boolean' }
     | { kind: 'integer' }
@@ -127,10 +128,18 @@ export function resolveSymbol(path: VariablePath): NuSMVSymbol | undefined {
     return resolvePathState(path, new Set()).symbol;
 }
 
+/**
+ * Finds the declaration at a particular point in a path. For `door.sensor.open`,
+ * a segment count of zero selects `door`, one selects `sensor`, and two selects `open`.
+ */
 export function resolvePathSymbol(path: VariablePath, segmentCount: number = path.segments.length): NuSMVSymbol | undefined {
     return resolvePathState(path, new Set(), segmentCount).symbol;
 }
 
+/**
+ * Resolves a bare name such as `open` in `door.state = open` against the enum
+ * declared for the other operand or the assignment target, not every enum in scope.
+ */
 export function resolveContextualEnumLiteral(path: VariablePath, seenDefines: Set<string> = new Set()): EnumValue | undefined {
     if (path.segments.length > 0) {
         return undefined;
@@ -158,6 +167,10 @@ export function isContextualEnumLiteral(path: VariablePath, seenDefines: Set<str
     return resolveContextualEnumLiteral(path, seenDefines) !== undefined;
 }
 
+/**
+ * Infers a type for editor checks. DEFINE references are followed only while
+ * their names are new to the current expansion, so recursive definitions terminate.
+ */
 export function inferExpressionType(
     expression: Expression | CaseExpression | GroupedExpression | NextCallExpression | SetExpression | UntilCtlExpression | FunctionCallExpression | ReferenceExpression | LiteralExpression | IntervalLiteral | WordLiteral,
     seenDefines: Set<string> = new Set()
@@ -526,6 +539,7 @@ function assignmentValueExpression(assignment: InitBody | NextBody | VarBodyAssi
     return assignment.assignment;
 }
 
+/** An assignment's expected enum applies to a case branch's result, not its condition. */
 function isAssignmentValueContext(reference: ReferenceExpression, valueExpression: Expression): boolean {
     if (!isDescendantOf(reference, valueExpression)) {
         return false;

@@ -1,8 +1,7 @@
-import { URI, type LangiumDocument } from 'langium';
+import { DefaultWorkspaceManager, URI, type LangiumDocument } from 'langium';
 import { DefaultDocumentUpdateHandler } from 'langium/lsp';
 import type { WorkspaceFolder } from 'vscode-languageserver-types';
 import { CancellationToken } from 'vscode-jsonrpc';
-import { DefaultWorkspaceManager } from '../../node_modules/langium/lib/workspace/workspace-manager.js';
 
 export class NuSMVDocumentUpdateHandler extends DefaultDocumentUpdateHandler {
     didCloseDocument({ document }: { document: { uri: string } }): void {

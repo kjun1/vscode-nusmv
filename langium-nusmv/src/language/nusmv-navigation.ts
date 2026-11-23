@@ -21,6 +21,10 @@ import { NuSMVServices } from './nusmv-module.js';
 import type { NuSMVSymbol } from './nusmv-symbols.js';
 import { resolveContextualEnumLiteral, resolvePathSymbol } from './nusmv-types.js';
 
+/**
+ * Navigates include paths to files and symbol references to declarations.
+ * Selecting a name in a dotted path resolves that segment, not the entire path.
+ */
 export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
 
     constructor(services: NuSMVServices) {
@@ -130,6 +134,7 @@ export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
     }
 }
 
+/** NuSMV declarations introduce their definitions, so both navigation commands use the same target. */
 export class NuSMVDeclarationProvider extends NuSMVDefinitionProvider implements DeclarationProvider {
 
     getDeclaration(document, params: DeclarationParams, cancelToken?: CancellationToken) {

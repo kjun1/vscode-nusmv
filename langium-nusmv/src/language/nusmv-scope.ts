@@ -34,6 +34,10 @@ export class NuSMVScopeComputation extends DefaultScopeComputation {
     }
 }
 
+/**
+ * Resolves process types only against modules in this model and its includes.
+ * An unrelated open file may declare a different module with the same name.
+ */
 export class NuSMVScopeProvider extends DefaultScopeProvider {
 
     override getScope(context: ReferenceInfo) {

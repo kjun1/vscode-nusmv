@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.1 (LiCRuM)
+
+- Install the personal fork as `licrum.vscode-nusmv` rather than `kjun1.vscode-nusmv`.
+- Group the regression tests and model fixtures separately from the extension source.
+- Document how the language server resolves symbols and how the extension runs models.
+
 ## 0.11.0 (kjun1)
 
 - Resolve modules and their members across quoted local model includes.

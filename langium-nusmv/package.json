@@ -1,9 +1,9 @@
 {
   "name": "vscode-nusmv",
-  "displayName": "NuSMV (kjun1)",
+  "displayName": "NuSMV (LiCRuM)",
   "description": "NuSMV extension for VSCode powered by Langium",
-  "version": "0.11.0",
-  "publisher": "kjun1",
+  "version": "0.11.1",
+  "publisher": "LiCRuM",
   "license": "EPL-1.0",
   "repository": {
     "type": "git",
@@ -146,7 +146,8 @@
   "scripts": {
     "langium:generate": "langium generate",
     "build": "npm run langium:generate && tsc -p tsconfig.json",
-    "test": "npm run build && node --test out/**/*.test.js",
+    "pretest": "node -e \"require('node:fs').rmSync('out-test', { recursive: true, force: true })\"",
+    "test": "npm run langium:generate && tsc -p tests && node --test \"out-test/tests/**/*.test.js\"",
     "watch": "tsc -w -p tsconfig.json",
     "vscode:prepublish": "npm run build"
   },

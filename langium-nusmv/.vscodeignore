@@ -2,3 +2,7 @@ src/**
 tsconfig.json
 langium-config.json
 node_modules/.cache/**
+tests/**
+out-test/**
+out/**/*.test.js
+out/**/*.test.js.map

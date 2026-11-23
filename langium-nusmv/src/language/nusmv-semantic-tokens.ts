@@ -35,6 +35,10 @@ import {
 import type { NuSMVSymbol } from './nusmv-symbols.js';
 import { resolveContextualEnumLiteral, resolvePathSymbol } from './nusmv-types.js';
 
+/**
+ * Supplements TextMate highlighting with resolved symbol kinds: for example,
+ * a process variable and its DEFINE member get different tokens in the same path.
+ */
 export class NuSMVSemanticTokenProvider extends AbstractSemanticTokenProvider {
 
     protected override highlightElement(node: AstNode, acceptor: SemanticTokenAcceptor): void {

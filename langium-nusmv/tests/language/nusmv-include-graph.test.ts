@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EmptyFileSystem, URI } from 'langium';
-import { createNuSMVServices } from './nusmv-module.js';
+import { createNuSMVServices } from '../../src/language/nusmv-module.js';
 
 test('reports cycles and repeated transitive includes at their source directives', async () => {
     const { shared } = createNuSMVServices(EmptyFileSystem);
