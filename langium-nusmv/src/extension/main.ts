@@ -19,6 +19,7 @@ import {
     type NuSMVRevealRunOutput,
     type NuSMVRunMessageKind
 } from './nusmv-runner.js';
+import { showSpecificationUses } from './specification-uses.js';
 
 let client: LanguageClient | undefined;
 let outputChannel: vscode.OutputChannel | undefined;
@@ -223,6 +224,17 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrent', runCurrentModel));
     context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrentInTerminal', runCurrentModelInTerminal));
+    context.subscriptions.push(vscode.commands.registerCommand('nusmv.findSpecificationUses', () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || !client || editor.document.languageId !== 'nusmv' || editor.document.uri.scheme !== 'file') {
+            return;
+        }
+        if (shouldBypassLanguageServerRequest(editor.document)) {
+            void vscode.window.showInformationMessage('NuSMV semantic checks are disabled for this file.');
+            return;
+        }
+        return showSpecificationUses(client, editor);
+    }));
 }
 
 /** Stop any captured run and let VS Code await the language client's shutdown. */

@@ -1,6 +1,6 @@
-import { AstUtils, CstUtils, GrammarUtils, type AstNode, type CstNode, type LeafCstNode } from 'langium';
+import { AstUtils, CstUtils, GrammarUtils, type AstNode, type LangiumDocument, type LeafCstNode } from 'langium';
 import { DefaultDefinitionProvider, type DeclarationProvider } from 'langium/lsp';
-import { LocationLink, type DeclarationParams, type DefinitionParams } from 'vscode-languageserver';
+import { LocationLink, type DeclarationParams, type DefinitionParams, type Position } from 'vscode-languageserver';
 import type { CancellationToken } from 'vscode-languageserver/node.js';
 import {
     isAsyncProcessType,
@@ -15,7 +15,7 @@ import {
     isVarBody,
     isVariablePath
 } from './generated/ast.js';
-import type { DotSegment, VariablePath } from './generated/ast.js';
+import type { VariablePath } from './generated/ast.js';
 import { includedModel } from './nusmv-includes.js';
 import { NuSMVServices } from './nusmv-module.js';
 import type { NuSMVSymbol } from './nusmv-symbols.js';
@@ -36,12 +36,7 @@ export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
     }
 
     protected getNuSMVDefinition(document, params: DefinitionParams): LocationLink[] | undefined {
-        const root = document.parseResult.value;
-        const source = CstUtils.findDeclarationNodeAtOffset(
-            root.$cstNode,
-            document.textDocument.offsetAt(params.position),
-            this.grammarConfig.nameRegexp
-        );
+        const source = findNameLeaf(document, params.position, this.grammarConfig.nameRegexp);
         if (!source) {
             return undefined;
         }
@@ -56,7 +51,7 @@ export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
             return [LocationLink.create(AstUtils.getDocument(included).uri.toString(), range, range, source.range)];
         }
 
-        const target = this.resolveTargetSymbol(source);
+        const target = resolveTargetSymbol(source);
         if (!target) {
             return undefined;
         }
@@ -65,33 +60,8 @@ export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
         return link ? [link] : undefined;
     }
 
-    protected resolveTargetSymbol(source: LeafCstNode): NuSMVSymbol | undefined {
-        const sourceAstNode = source.astNode;
-        const declaration = this.resolveDeclarationName(source, sourceAstNode);
-        if (declaration) {
-            return declaration;
-        }
-
-        const moduleType = this.findSelfOrContainer(sourceAstNode, node => isAsyncProcessType(node) || isSyncProcessType(node));
-        if (moduleType && this.isSourceForProperty(source, moduleType, 'module')) {
-            return moduleType.module?.ref;
-        }
-
-        const dotSegment = this.findSelfOrContainer(sourceAstNode, isDotSegment);
-        if (dotSegment && this.isSourceForProperty(source, dotSegment, 'symbol')) {
-            return this.resolveDotSegmentSymbol(dotSegment);
-        }
-
-        const path = this.findSelfOrContainer(sourceAstNode, isVariablePath);
-        if (path && this.isSourceForProperty(source, path, 'head')) {
-            return resolvePathSymbol(path, 0) ?? resolveContextualEnumLiteral(path);
-        }
-
-        return undefined;
-    }
-
     protected createLocationLink(source: LeafCstNode, target: NuSMVSymbol): LocationLink | undefined {
-        const targetSelection = this.findNameNode(target);
+        const targetSelection = GrammarUtils.findNodeForProperty(target.$cstNode, 'name') ?? target.$cstNode;
         const targetCst = target.$cstNode ?? targetSelection;
         if (!targetSelection || !targetCst) {
             return undefined;
@@ -104,34 +74,6 @@ export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
             source.range
         );
     }
-
-    private resolveDotSegmentSymbol(segment: DotSegment): NuSMVSymbol | undefined {
-        const path = segment.$container as VariablePath;
-        const segmentIndex = path.segments.indexOf(segment);
-        return segmentIndex >= 0
-            ? resolvePathSymbol(path, segmentIndex + 1)
-            : undefined;
-    }
-
-    private resolveDeclarationName(source: LeafCstNode, sourceAstNode: AstNode): NuSMVSymbol | undefined {
-        if (isNamedSymbol(sourceAstNode) && this.isSourceForProperty(source, sourceAstNode, 'name')) {
-            return sourceAstNode;
-        }
-        return undefined;
-    }
-
-    private findNameNode(symbol: NuSMVSymbol): CstNode | undefined {
-        return GrammarUtils.findNodeForProperty(symbol.$cstNode, 'name') ?? symbol.$cstNode;
-    }
-
-    private isSourceForProperty(source: LeafCstNode, astNode: AstNode, property: string): boolean {
-        const propertyNode = GrammarUtils.findNodeForProperty(astNode.$cstNode, property);
-        return !!propertyNode && (propertyNode === source || CstUtils.isChildNode(source, propertyNode));
-    }
-
-    private findSelfOrContainer<T extends AstNode>(node: AstNode, predicate: (candidate: AstNode) => candidate is T): T | undefined {
-        return predicate(node) ? node : AstUtils.getContainerOfType(node, predicate);
-    }
 }
 
 /** NuSMV declarations introduce their definitions, so both navigation commands use the same target. */
@@ -140,6 +82,40 @@ export class NuSMVDeclarationProvider extends NuSMVDefinitionProvider implements
     getDeclaration(document, params: DeclarationParams, cancelToken?: CancellationToken) {
         return this.getDefinition(document, params as DefinitionParams, cancelToken);
     }
+}
+
+/** Pick the identifier at the cursor with the same end-of-name rule as Go to Definition. */
+export function findNameLeaf(document: LangiumDocument, position: Position, nameRegexp: RegExp): LeafCstNode | undefined {
+    const root = document.parseResult.value.$cstNode;
+    return root && CstUtils.findDeclarationNodeAtOffset(root, document.textDocument.offsetAt(position), nameRegexp);
+}
+
+/** Resolve the selected name, including individual segments and context-dependent enum literals. */
+export function resolveTargetSymbol(source: LeafCstNode): NuSMVSymbol | undefined {
+    const node = source.astNode;
+    if (isNamedSymbol(node) && isSourceForProperty(source, node, 'name')) {
+        return node;
+    }
+    const process = AstUtils.getContainerOfType(node, item => isAsyncProcessType(item) || isSyncProcessType(item));
+    if (process && isSourceForProperty(source, process, 'module')) {
+        return process.module?.ref;
+    }
+    const segment = AstUtils.getContainerOfType(node, isDotSegment);
+    if (segment && isSourceForProperty(source, segment, 'symbol')) {
+        const path = segment.$container as VariablePath;
+        const index = path.segments.indexOf(segment);
+        return index >= 0 ? resolvePathSymbol(path, index + 1) : undefined;
+    }
+    const path = AstUtils.getContainerOfType(node, isVariablePath);
+    if (path && isSourceForProperty(source, path, 'head')) {
+        return resolvePathSymbol(path, 0) ?? resolveContextualEnumLiteral(path);
+    }
+    return undefined;
+}
+
+function isSourceForProperty(source: LeafCstNode, node: AstNode, property: string): boolean {
+    const propertyNode = GrammarUtils.findNodeForProperty(node.$cstNode, property);
+    return !!propertyNode && (propertyNode === source || CstUtils.isChildNode(source, propertyNode));
 }
 
 function isNamedSymbol(node: AstNode): node is NuSMVSymbol {

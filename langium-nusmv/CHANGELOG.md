@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0 (LiCRuM)
+
+- Preview declarations in hovers and completion suggestions, including members of included modules.
+- Find specifications that refer directly to a symbol and navigate to the matching check.
+
 ## 0.11.1 (LiCRuM)
 
 - Install the personal fork as `licrum.vscode-nusmv` rather than `kjun1.vscode-nusmv`.

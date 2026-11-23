@@ -35,6 +35,17 @@ through nested includes. Go to Definition on `door` or `open` takes you to the
 included file. Includes are for complete modules: the language server does not
 run a preprocessor, splice in fragments of a module, or expand macros.
 
+Hover over `entry.open` to see the declaration of the member under the pointer.
+When you type `entry.`, the member suggestions include declaration details: for
+a `DEFINE`, you can read its expression before inserting the name.
+
+To navigate the other way, place the cursor on `open` in `door.smv` and choose
+**NuSMV: Find Specifications Using Symbol** from the editor context menu.
+This searches open models and local `.smv` files in the workspace for checks
+that directly reference that declaration. One match opens immediately; with
+several matches, choose by specification and file. It does not count an indirect
+use through another `DEFINE` or a same-named member in a different module.
+
 Save any edited dependencies, then run **NuSMV: Run Current Model** from the
 file containing `MODULE main`.
 The runner adds `-pre cpp` for quoted includes unless you already selected

@@ -12,6 +12,7 @@ import {
     PartialLangiumServices
 } from 'langium/lsp';
 import { NuSMVGeneratedModule, NuSMVGeneratedSharedModule } from './generated/module.js';
+import { NuSMVHoverProvider } from './nusmv-hover.js';
 import { NuSMVCompletionProvider } from './nusmv-completion.js';
 import { NuSMVDeclarationProvider, NuSMVDefinitionProvider } from './nusmv-navigation.js';
 import { NuSMVSemanticTokenProvider } from './nusmv-semantic-tokens.js';
@@ -22,6 +23,7 @@ import { checkIncludes, NuSMVDocumentBuilder } from './nusmv-includes.js';
 
 export type NuSMVAddedServices = {
     lsp: {
+        HoverProvider: NuSMVHoverProvider
         CompletionProvider: NuSMVCompletionProvider
         DeclarationProvider: NuSMVDeclarationProvider
         DefinitionProvider: NuSMVDefinitionProvider
@@ -40,6 +42,7 @@ export type NuSMVServices = LangiumServices & NuSMVAddedServices;
 
 export const NuSMVModule: Module<NuSMVServices, PartialLangiumServices & NuSMVAddedServices> = {
     lsp: {
+        HoverProvider: services => new NuSMVHoverProvider(services),
         CompletionProvider: services => new NuSMVCompletionProvider(services),
         DeclarationProvider: services => new NuSMVDeclarationProvider(services),
         DefinitionProvider: services => new NuSMVDefinitionProvider(services),

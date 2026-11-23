@@ -1,5 +1,5 @@
-import { AstUtils, CstUtils, type AstNode, type ReferenceInfo } from 'langium';
-import { DefaultCompletionProvider } from 'langium/lsp';
+import { AstUtils, CstUtils, type AstNode, type AstNodeDescription, type ReferenceInfo } from 'langium';
+import { DefaultCompletionProvider, type CompletionContext } from 'langium/lsp';
 import type { CompletionParams } from 'vscode-languageserver';
 import { CompletionItemKind, CompletionList } from 'vscode-languageserver';
 import type { CancellationToken } from 'vscode-languageserver/node.js';
@@ -58,6 +58,7 @@ import {
 } from './generated/ast.js';
 import { NuSMVServices } from './nusmv-module.js';
 import { collectDeclaredModules, collectVisibleModuleSymbols, findContainingModule, type NuSMVSymbol } from './nusmv-symbols.js';
+import { symbolPreview } from './nusmv-symbol-preview.js';
 import { resolvePathTargetModule, resolveSymbol } from './nusmv-types.js';
 
 const BUILTIN_LITERAL_ITEMS = [
@@ -88,6 +89,11 @@ export class NuSMVCompletionProvider extends DefaultCompletionProvider {
         return referenceType === 'Module'
             ? candidates.filter(description => description.type === Module.$type)
             : candidates;
+    }
+
+    protected override createReferenceCompletionItem(description: AstNodeDescription, info: ReferenceInfo, context: CompletionContext) {
+        const item = super.createReferenceCompletionItem(description, info, context);
+        return isModule(description.node) ? { ...item, ...this.createSymbolCompletionItem(description.node) } : item;
     }
 
     override async getCompletion(document, params: CompletionParams, cancelToken?: CancellationToken) {
@@ -258,7 +264,10 @@ export class NuSMVCompletionProvider extends DefaultCompletionProvider {
     }
 
     private createSymbolCompletionItem(symbol: NuSMVSymbol) {
+        const preview = symbolPreview(symbol);
         return {
+            labelDetails: { description: preview.description },
+            documentation: preview.documentation,
             label: symbol.name,
             kind: completionItemKindForSymbol(symbol),
             detail: completionDetailForSymbol(symbol),
