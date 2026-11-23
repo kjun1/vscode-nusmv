@@ -1,0 +1,13 @@
+MODULE signal
+VAR color : {blue, green};
+ASSIGN
+    init(color) := blue;
+    next(color) := green;
+
+MODULE main
+VAR
+    left : signal;
+    right : signal;
+DEFINE
+    both_green := left.color = green & green = right.color;
+CTLSPEC EF both_green

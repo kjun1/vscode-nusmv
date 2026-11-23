@@ -1,13 +1,13 @@
 {
   "name": "vscode-nusmv",
-  "displayName": "NuSMV VSCode Extension",
+  "displayName": "NuSMV (kjun1)",
   "description": "NuSMV extension for VSCode powered by Langium",
-  "version": "0.10.0",
-  "publisher": "LiamWalsh98",
+  "version": "0.11.0",
+  "publisher": "kjun1",
   "license": "EPL-1.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LiamWalsh98/vscode-nusmv.git",
+    "url": "git+https://github.com/kjun1/vscode-nusmv.git",
     "directory": "langium-nusmv"
   },
   "type": "module",
@@ -63,7 +63,7 @@
         "nusmv.executablePath": {
           "type": "string",
           "default": "",
-          "description": "Path to the NuSMV executable. Leave empty to use 'nusmv' on PATH, or 'nusmv.exe' on Windows."
+          "description": "Path to the NuSMV executable. Leave empty to use 'nusmv' or 'NuSMV' on PATH ('nusmv.exe' on Windows)."
         },
         "nusmv.defaultRunArgs": {
           "type": "array",

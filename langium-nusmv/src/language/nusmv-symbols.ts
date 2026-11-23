@@ -1,4 +1,4 @@
-import { AstUtils } from 'langium';
+import { AstUtils, type AstNode } from 'langium';
 import {
     ConstantSymbol,
     DefineBody,
@@ -6,10 +6,11 @@ import {
     FormalParameter,
     isEnumType,
     isModule,
+    isNuSmvModel,
     Module,
-    NuSmvModel,
     VarBody
 } from './generated/ast.js';
+import { visibleModels } from './nusmv-includes.js';
 
 export type NuSMVSymbol = Module | VarBody | FormalParameter | DefineBody | ConstantSymbol | EnumValue;
 
@@ -52,10 +53,9 @@ export function collectSymbolNames(module: Module): string[] {
     return [...new Set(collectModuleSymbols(module).map(symbol => symbol.name))];
 }
 
-export function collectDeclaredModules(node: object): Module[] {
-    const root = AstUtils.getContainerOfType(node as never, (item): item is NuSmvModel => (item as NuSmvModel | undefined)?.$type === 'NuSmvModel')
-        ?? ((node as NuSmvModel | undefined)?.$type === 'NuSmvModel' ? node as NuSmvModel : undefined);
-    return root?.modules.filter(hasSymbolName) ?? [];
+export function collectDeclaredModules(node: AstNode): Module[] {
+    const root = AstUtils.getContainerOfType(node, isNuSmvModel);
+    return root ? Array.from(visibleModels(root)).flatMap(model => model.modules.filter(hasSymbolName)) : [];
 }
 
 function collectEnumValues(variable: VarBody): EnumValue[] {

@@ -9,12 +9,14 @@ import {
     isDotSegment,
     isEnumValue,
     isFormalParameter,
+    isIncludeDirective,
     isModule,
     isSyncProcessType,
     isVarBody,
     isVariablePath
 } from './generated/ast.js';
 import type { DotSegment, VariablePath } from './generated/ast.js';
+import { includedModel } from './nusmv-includes.js';
 import { NuSMVServices } from './nusmv-module.js';
 import type { NuSMVSymbol } from './nusmv-symbols.js';
 import { resolveContextualEnumLiteral, resolvePathSymbol } from './nusmv-types.js';
@@ -38,6 +40,16 @@ export class NuSMVDefinitionProvider extends DefaultDefinitionProvider {
         );
         if (!source) {
             return undefined;
+        }
+
+        if (isIncludeDirective(source.astNode)) {
+            const included = includedModel(source.astNode);
+            if (!included) {
+                return [];
+            }
+            const start = { line: 0, character: 0 };
+            const range = { start, end: start };
+            return [LocationLink.create(AstUtils.getDocument(included).uri.toString(), range, range, source.range)];
         }
 
         const target = this.resolveTargetSymbol(source);

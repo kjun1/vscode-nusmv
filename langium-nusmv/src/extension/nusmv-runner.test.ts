@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import {
     buildNuSMVCommand,
@@ -10,9 +13,20 @@ import {
 
 test('resolves configured and platform-default NuSMV executables', () => {
     assert.equal(resolveNuSMVExecutable('/opt/nusmv/bin/NuSMV', 'darwin'), '/opt/nusmv/bin/NuSMV');
-    assert.equal(resolveNuSMVExecutable('', 'darwin'), 'nusmv');
-    assert.equal(resolveNuSMVExecutable(undefined, 'linux'), 'nusmv');
+    assert.equal(resolveNuSMVExecutable('', 'darwin', ''), 'nusmv');
+    assert.equal(resolveNuSMVExecutable(undefined, 'linux', ''), 'nusmv');
     assert.equal(resolveNuSMVExecutable('', 'win32'), 'nusmv.exe');
+});
+
+test('finds the official Unix binary without overriding a lowercase executable', { skip: process.platform === 'win32' }, (t) => {
+    const directory = mkdtempSync(join(tmpdir(), 'nusmv-path-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    writeFileSync(join(directory, 'NuSMV'), '', { mode: 0o755 });
+    const firstName = resolveNuSMVExecutable(undefined, process.platform, directory);
+    // A case-insensitive volume also accepts the original lowercase spelling.
+    assert.equal(firstName, existsSync(join(directory, 'nusmv')) ? 'nusmv' : 'NuSMV');
+    writeFileSync(join(directory, 'nusmv'), '', { mode: 0o755 });
+    assert.equal(resolveNuSMVExecutable(undefined, process.platform, directory), 'nusmv');
 });
 
 test('builds NuSMV command arguments with default args before the model path', () => {
@@ -23,6 +37,17 @@ test('builds NuSMV command arguments with default args before the model path', (
             args: ['-dcx', '-int', '/models/model-input.smv']
         }
     );
+});
+
+test('enables cpp only for local includes without an explicit preprocessor', () => {
+    const path = '/models/entry.smv';
+    const model = '  # include "parts/component.smv"\nMODULE main';
+    const args = (text: string, settings: string[]) => buildNuSMVCommand('NuSMV', settings, path, text).args;
+    assert.deepEqual(args(model, ['-dcx']), ['-dcx', '-pre', 'cpp', path]);
+    assert.deepEqual(args(model, ['-pre', 'cpp m4']), ['-pre', 'cpp m4', path]);
+    assert.deepEqual(args(model, ['-pre', 'm4']), ['-pre', 'm4', path]);
+    assert.deepEqual(args(model, ['-cpp']), ['-cpp', path]);
+    assert.deepEqual(args('-- #include "not-an-include.smv"\nMODULE main', ['-dcx']), ['-dcx', path]);
 });
 
 test('parses true and false NuSMV specification result lines', () => {

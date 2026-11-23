@@ -1,0 +1,10 @@
+-- Uses the same module and member names as model-river, but a different enum.
+MODULE worker
+VAR phase : {idle, busy};
+ASSIGN
+    init(phase) := idle;
+    next(phase) := busy;
+
+MODULE main
+VAR job : worker;
+CTLSPEC EF (job.phase = busy)

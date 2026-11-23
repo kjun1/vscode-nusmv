@@ -217,13 +217,8 @@ export function activate(context: vscode.ExtensionContext): void {
         terminal.show();
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrent', () => {
-        void runCurrentModel();
-    }));
-
-    context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrentInTerminal', () => {
-        runCurrentModelInTerminal();
-    }));
+    context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrent', runCurrentModel));
+    context.subscriptions.push(vscode.commands.registerCommand('nusmv.runCurrentInTerminal', runCurrentModelInTerminal));
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -248,14 +243,7 @@ async function runCurrentModel(): Promise<void> {
         return;
     }
 
-    let saved = false;
-    try {
-        saved = await document.save();
-    } catch (error) {
-        outputChannel?.appendLine(`Failed to save before NuSMV run: ${String(error)}`);
-    }
-    if (!saved) {
-        void vscode.window.showWarningMessage('Save failed, so NuSMV was not run.');
+    if (!await saveModelForRun(document)) {
         return;
     }
 
@@ -310,7 +298,7 @@ async function runCurrentModel(): Promise<void> {
     showRunNotification(summary.kind, summary.message);
 }
 
-function runCurrentModelInTerminal(): void {
+async function runCurrentModelInTerminal(): Promise<void> {
     const document = getActiveNuSMVDocument();
     if (!document) {
         return;
@@ -319,9 +307,24 @@ function runCurrentModelInTerminal(): void {
         void vscode.window.showWarningMessage('Save this NuSMV model to disk before running it in a terminal.');
         return;
     }
+    if (!await saveModelForRun(document)) {
+        return;
+    }
     const terminal = vscode.window.createTerminal('NuSMV Batch');
     terminal.sendText(buildTerminalCommand(buildNuSMVRunCommand(document)));
     terminal.show();
+}
+
+async function saveModelForRun(document: vscode.TextDocument): Promise<boolean> {
+    try {
+        if (!document.isDirty || await document.save()) {
+            return true;
+        }
+    } catch (error) {
+        outputChannel?.appendLine(`Failed to save before NuSMV run: ${String(error)}`);
+    }
+    void vscode.window.showWarningMessage('Save failed, so NuSMV was not run.');
+    return false;
 }
 
 function getActiveNuSMVDocument(): vscode.TextDocument | undefined {
@@ -341,7 +344,8 @@ function buildNuSMVRunCommand(document: vscode.TextDocument): NuSMVCommand {
     return buildNuSMVCommand(
         getNuSMVExecutable(document),
         getDefaultRunArgs(document),
-        document.fileName
+        document.fileName,
+        document.getText()
     );
 }
 

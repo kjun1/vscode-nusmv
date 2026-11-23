@@ -1,7 +1,16 @@
-import type { LangiumDocument } from 'langium';
+import { URI, type LangiumDocument } from 'langium';
+import { DefaultDocumentUpdateHandler } from 'langium/lsp';
 import type { WorkspaceFolder } from 'vscode-languageserver-types';
 import { CancellationToken } from 'vscode-jsonrpc';
 import { DefaultWorkspaceManager } from '../../node_modules/langium/lib/workspace/workspace-manager.js';
+
+export class NuSMVDocumentUpdateHandler extends DefaultDocumentUpdateHandler {
+    didCloseDocument({ document }: { document: { uri: string } }): void {
+        // Drop the editor snapshot (including discarded edits). If an open
+        // model still includes this URI, the builder reloads it from disk.
+        this.fireDocumentUpdate([], [URI.parse(document.uri)]);
+    }
+}
 
 /**
  * Avoid eagerly indexing every .smv file in the workspace at startup.

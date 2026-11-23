@@ -15,6 +15,7 @@ import {
     LtlSpecification,
     NextBody,
     NuSMVAstType,
+    NuSmvModel,
     PslSpecification,
     TransConstraint,
     UnaryExpression,
@@ -22,7 +23,8 @@ import {
     VariablePath
 } from './generated/ast.js';
 import { NuSMVServices } from './nusmv-module.js';
-import { collectSymbolNames, findContainingModule } from './nusmv-symbols.js';
+import { includedModel, visibleModels } from './nusmv-includes.js';
+import { collectSymbolNames, findContainingModule, hasSymbolName } from './nusmv-symbols.js';
 import {
     describeType,
     inferDeclaredType,
@@ -36,6 +38,40 @@ import {
 } from './nusmv-types.js';
 
 export class NuSMVValidator {
+    checkModuleNames(root: NuSmvModel, accept: ValidationAcceptor): void {
+        const names = new Set<string>();
+        for (const module of root.modules.filter(hasSymbolName)) {
+            if (names.has(module.name)) {
+                accept('error', `Duplicate module '${module.name}'.`, { node: module, property: 'name' });
+            }
+            names.add(module.name);
+        }
+
+        const visited = new Set([root]);
+        for (const directive of root.includes) {
+            const included = includedModel(directive);
+            if (!included) {
+                continue;
+            }
+            const importedNames = new Set<string>();
+            for (const model of visibleModels(included)) {
+                if (!visited.has(model)) {
+                    visited.add(model);
+                    for (const module of model.modules.filter(hasSymbolName)) {
+                        importedNames.add(module.name);
+                    }
+                }
+            }
+            // Conflicts internal to one included branch are diagnosed in that file.
+            for (const name of importedNames) {
+                if (names.has(name)) {
+                    accept('error', `Duplicate module '${name}'.`, { node: directive });
+                }
+                names.add(name);
+            }
+        }
+    }
+
     checkVariablePath(path: VariablePath, accept: ValidationAcceptor): void {
         const module = findContainingModule(path);
         if (!module) {
@@ -252,6 +288,7 @@ export function registerValidationChecks(services: NuSMVServices): void {
     const registry = services.validation.ValidationRegistry;
     const validator = services.validation.NuSMVValidator;
     const checks: ValidationChecks<NuSMVAstType> = {
+        NuSmvModel: validator.checkModuleNames,
         VariablePath: validator.checkVariablePath,
         CaseBranch: validator.checkCaseBranch,
         BinaryExpression: validator.checkBinaryExpression,

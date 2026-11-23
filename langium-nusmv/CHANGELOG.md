@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.0 (kjun1)
+
+- Resolve modules and their members across quoted local model includes.
+- Select the cpp preprocessor when running models that include other files.
+
 ## 0.10.0
 
 - Replace `NuSMV: Run Current Model` terminal injection with a captured, cancellable runner

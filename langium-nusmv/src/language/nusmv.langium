@@ -8,9 +8,13 @@ hidden terminal SL_COMMENT: /--[^\n\r]*/;
 terminal WORD: /0(?:u|s)?(?:b|B|o|O|_|d|D|h|H)\d*_[A-Fa-f0-9]+/;
 terminal ID: /[A-Za-z_][A-Za-z0-9_$#-]*/;
 terminal INT returns number: /[0-9]+/;
+terminal LOCAL_INCLUDE: /#[ \t]*include[ \t]*"[^"\r\n]+"/;
 
 entry NuSmvModel:
-    modules+=Module*;
+    (modules+=Module | includes+=IncludeDirective)*;
+
+IncludeDirective:
+    spec=LOCAL_INCLUDE;
 
 Module:
     'MODULE' name=ID ('(' params+=FormalParameter (',' params+=FormalParameter)* ')')?

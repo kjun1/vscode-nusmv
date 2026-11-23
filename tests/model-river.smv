@@ -1,0 +1,11 @@
+-- The enum literal must resolve against this file's worker module.
+MODULE worker
+VAR phase : {upstream, downstream};
+ASSIGN
+    init(phase) := upstream;
+    next(phase) := downstream;
+
+MODULE main
+VAR job : worker;
+DEFINE complete := job.phase = downstream;
+LTLSPEC F complete

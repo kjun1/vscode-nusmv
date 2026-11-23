@@ -17,7 +17,8 @@ import { NuSMVDeclarationProvider, NuSMVDefinitionProvider } from './nusmv-navig
 import { NuSMVSemanticTokenProvider } from './nusmv-semantic-tokens.js';
 import { NuSMVScopeComputation, NuSMVScopeProvider } from './nusmv-scope.js';
 import { NuSMVValidator, registerValidationChecks } from './nusmv-validator.js';
-import { NuSMVWorkspaceManager } from './nusmv-workspace-manager.js';
+import { NuSMVDocumentUpdateHandler, NuSMVWorkspaceManager } from './nusmv-workspace-manager.js';
+import { checkIncludes, NuSMVDocumentBuilder } from './nusmv-includes.js';
 
 export type NuSMVAddedServices = {
     lsp: {
@@ -54,7 +55,11 @@ export const NuSMVModule: Module<NuSMVServices, PartialLangiumServices & NuSMVAd
 };
 
 export const NuSMVSharedModule: Module<LangiumSharedServices, PartialLangiumSharedServices> = {
+    lsp: {
+        DocumentUpdateHandler: services => new NuSMVDocumentUpdateHandler(services)
+    },
     workspace: {
+        DocumentBuilder: services => new NuSMVDocumentBuilder(services),
         WorkspaceManager: services => new NuSMVWorkspaceManager(services)
     }
 };
@@ -75,5 +80,6 @@ export function createNuSMVServices(context: DefaultSharedModuleContext): {
     );
     shared.ServiceRegistry.register(NuSMV);
     registerValidationChecks(NuSMV);
+    NuSMV.validation.ValidationRegistry.register({ NuSmvModel: checkIncludes });
     return { shared, NuSMV };
 }

@@ -1,3 +1,6 @@
+import { accessSync, constants, statSync } from 'node:fs';
+import { delimiter, join } from 'node:path';
+
 export type NuSMVRevealRunOutput = 'always' | 'onFailure' | 'never';
 export type NuSMVRunMessageKind = 'info' | 'warning' | 'error';
 
@@ -28,16 +31,37 @@ export interface NuSMVRunSummary {
 
 const SPEC_RESULT_PATTERN = /^\s*--\s*specification\b.*?\bis\s+(true|false)\b.*$/gim;
 
-export function resolveNuSMVExecutable(configuredPath: string | undefined, platform: NodeJS.Platform = process.platform): string {
-    return configuredPath?.trim()
-        ? configuredPath
-        : platform === 'win32' ? 'nusmv.exe' : 'nusmv';
+export function resolveNuSMVExecutable(configuredPath: string | undefined, platform = process.platform, searchPath = process.env.PATH ?? ''): string {
+    if (configuredPath?.trim()) {
+        return configuredPath;
+    }
+    if (platform === 'win32') {
+        return 'nusmv.exe';
+    }
+    for (const name of ['nusmv', 'NuSMV']) {
+        for (const directory of searchPath.split(delimiter).filter(Boolean)) {
+            const candidate = join(directory, name);
+            try {
+                accessSync(candidate, constants.X_OK);
+                if (statSync(candidate).isFile()) {
+                    return name;
+                }
+            } catch {
+                // No executable by this name in this PATH entry.
+            }
+        }
+    }
+    return 'nusmv';
 }
 
-export function buildNuSMVCommand(executable: string, defaultRunArgs: readonly string[], modelPath: string): NuSMVCommand {
+export function buildNuSMVCommand(executable: string, defaultRunArgs: readonly string[], modelPath: string, modelText = ''): NuSMVCommand {
+    const args = [...defaultRunArgs];
+    if (!args.includes('-pre') && !args.includes('-cpp') && /^[\t ]*#[\t ]*include[\t ]*"[^"\r\n]+"/m.test(modelText)) {
+        args.push('-pre', 'cpp');
+    }
     return {
         executable,
-        args: [...defaultRunArgs, modelPath]
+        args: [...args, modelPath]
     };
 }
 
